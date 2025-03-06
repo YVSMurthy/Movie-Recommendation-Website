@@ -1,0 +1,5 @@
+{
+    "watch": ["api"],
+    "ext": "tsc",
+    "exec": "npx ts-node api/server.ts"
+}
