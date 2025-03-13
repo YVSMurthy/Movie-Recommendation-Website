@@ -26,9 +26,17 @@ export default function SimilarMovies() {
                 }
             }
             try {
-                fetch(uri, options)
-                    .then((raw) => raw.json())
-                    .then((data) => setMovies(data['movies']));
+                const response = await fetch(uri, options);
+                const data = await response.json()
+
+                console.log("data: ", data)
+
+                if (response.status == 200) {
+                    setMovies(data[0]['movies'])
+                    console.log(data[0]['movies'])
+                } else {
+                    console.log("Error: "+data['message'])
+                }
             } catch(e) {
                 console.log("Error: "+e)
             }

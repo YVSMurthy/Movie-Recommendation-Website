@@ -168,6 +168,7 @@ export default function Home() {
                             });
                         })
                         setMovies(currMovies);
+                        console.log(currMovies)
                     })
                     .catch(err => console.error(err));
             } catch (error) {
