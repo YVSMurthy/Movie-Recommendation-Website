@@ -34,8 +34,6 @@ async def findSimilarMovies(movie: str):
         "Authorization": f"Bearer {auth_token}"
     }
 
-    print("Auth token:", auth_token)
-    print("Recommended movies:", recommended_movies)
     async with httpx.AsyncClient() as client:
         for i in recommended_movies:
             try:
@@ -43,8 +41,6 @@ async def findSimilarMovies(movie: str):
                 response = await client.get(uri, headers=header)
                 print(f"Status for {i[0]}: {response.status_code}")
                 if response.status_code != 200:
-                    print(f"Failed to fetch movie {i[0]}: {response.text}")
-                    # Fallback dummy data
                     dummy_movie = {
                         'avgVote': 0.0,
                         'id': i[0],
@@ -69,7 +65,6 @@ async def findSimilarMovies(movie: str):
                     movieList.append(movie)
 
             except Exception as e:
-                print(f"Error parsing movie {i[0]}:", str(e))
                 movieList.append({
                     'avgVote': 0.0,
                     'id': i[0],
