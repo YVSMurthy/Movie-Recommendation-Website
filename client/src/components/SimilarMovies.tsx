@@ -18,7 +18,7 @@ export default function SimilarMovies() {
 
     useEffect(() => {
         const fetchSimilarMovies = async () => {
-            const uri = `http://localhost:8000/find-similar-movies/${movie}`;
+            const uri = `https://movie-recommendation-website-grtp.onrender.com/find-similar-movies/${movie}`;
             const options = {
                 method: "GET",
                 headers: {
