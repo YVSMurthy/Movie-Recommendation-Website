@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware #type:ignore
 from recommendation_model.recommendation_model import recommend
 from dotenv import load_dotenv #type: ignore
 import os
+import uvicorn
 
 load_dotenv()
 
@@ -11,7 +12,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -27,33 +28,60 @@ async def findSimilarMovies(movie: str):
 
     recommended_movies = recommend(movie, n_recommendations=10)
 
-    try:
-        auth_token = os.getenv('AUTH_TOKEN')
-        header = {
-            "accept": "application/json",
-            "Authorization": f"Bearer {auth_token}"
-        }
+    auth_token = os.getenv('AUTH_TOKEN')
+    header = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {auth_token}"
+    }
 
+    print("Auth token:", auth_token)
+    print("Recommended movies:", recommended_movies)
+    async with httpx.AsyncClient() as client:
         for i in recommended_movies:
-            uri = f"https://api.themoviedb.org/3/movie/{i[0]}?language=en-US"
-            async with httpx.AsyncClient() as client:
+            try:
+                uri = f"https://api.themoviedb.org/3/movie/{i[0]}"
                 response = await client.get(uri, headers=header)
-                data = response.json()
+                print(f"Status for {i[0]}: {response.status_code}")
+                if response.status_code != 200:
+                    print(f"Failed to fetch movie {i[0]}: {response.text}")
+                    # Fallback dummy data
+                    dummy_movie = {
+                        'avgVote': 0.0,
+                        'id': i[0],
+                        'lang': 'unknown',
+                        'poster': '',
+                        'releaseDate': 'N/A',
+                        'title': i[1]
+                    }
+                    movieList.append(dummy_movie)
+                    continue
+                else:
+                    data = response.json()
+                    movie = {
+                        'avgVote': data.get('vote_average', 0.0),
+                        'id': data.get('id', i[0]),
+                        'lang': data.get('original_language', 'unknown'),
+                        'poster': data.get('poster_path', ''),
+                        'releaseDate': data.get('release_date', 'N/A'),
+                        'title': data.get('title', i[1])
+                    }
 
-                movie = {
-                    'avgVote': data['vote_average'],
-                    'id': data['id'],
-                    'lang': data['original_language'],
-                    'poster': data['poster_path'],
-                    'releaseDate': data['release_date'],
-                    'title': data['title']
-                }
+                    movieList.append(movie)
 
-                movieList.append(movie)
-        
-        return {"movies": movieList}, 200
+            except Exception as e:
+                print(f"Error parsing movie {i[0]}:", str(e))
+                movieList.append({
+                    'avgVote': 0.0,
+                    'id': i[0],
+                    'lang': 'unknown',
+                    'poster': '',
+                    'releaseDate': 'N/A',
+                    'title': i[1]
+                })
 
-    except Exception as e:
-        print("The error is: ",e)
-        return {"message": "Internal Server Error"}, 500
+    return {"movies": movieList}, 200
+
+
+if __name__ == "__main__":
+    uvicorn.run("api.main:app", host="0.0.0.0", port=3001, reload=True)
 
